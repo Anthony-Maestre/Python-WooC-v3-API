@@ -1,12 +1,12 @@
 import PySimpleGUI as sg
 import xlsxwriter
+import acciones
 import propiedades
-
-sg.theme("DarkGrey3")
 
 cats = propiedades.categorias()
 atribs = propiedades.atributos()
 
+sg.theme("DarkGrey3")
 sg.popup_no_wait('Iniciando...', non_blocking = True, button_type = 5)
 
 def woo_prods():
@@ -22,60 +22,18 @@ def woo_prods():
             sg.popup_no_wait('Actualizando productos...', non_blocking = True)
 
             try:
-                newprod = pd.read_excel('productosint.xlsx', dtype=str)
+                acciones.actualizar()
             except:
                 sg.popup_error('Es necesario ejecutar "Extraer" antes de actualizar')
                 return
-            newprod.columns = ['parId', 'id', 'name', 'weight', 'price']
 
-            datas = {}
-            n = 0
-            while n < len(newprod):
-                datas[n] = {'regular_price':newprod.price[n]}
-                n += 1
-            else:
-                print('R')
-            
-            n = 0
-            while n <= len(newprod):
-                wcapi.put(f"products/{newprod.parId[n]}/variations/{newprod.id[n]}", datas[n]).json()
-                print('Se ha modificado el producto: ' + newprod.name[n])
-                print(wcapi.put(f"products/{newprod.parId[n]}/variations/{newprod.id[n]}", datas[n]).json())
-                n += 1
-            else:
-                sg.popup_no_wait('Se han actualizado todos los productos', non_blocking = True)
+            sg.popup_no_wait('Se han actualizado todos los productos', non_blocking = True)
 
         elif event == 'Extraer':
             sg.popup_no_wait('Extrayendo productos...', non_blocking = True)
 
-            r = wcapi.get("products", params={"per_page": 90})
-            df = pd.read_json(r.text)
+            acciones.extraer()
 
-            df2 = pd.DataFrame()
-            n = 0
-            sg.popup_no_wait('Extrayendo variaciones...', non_blocking = True)
-            while n <= len(df):
-                p = wcapi.get(f"products/{df.id[n]}/variations")
-                dfp = pd.read_json(p.text)
-                dfp['name'] = df.name[n]
-                dfp['parId'] = df.id[n]
-                df2 = pd.concat([dfp, df2], sort=False)
-                n += 1
-            else:
-                sg.popup_no_wait('Guardando resultados...', non_blocking = True)
-
-            df2.sort_values(by=['name'], inplace=True)
-            df2.reset_index(inplace=True)
-            df2[['id', 'name', 'weight', 'price']]
-
-            writer = pd.ExcelWriter('productosint.xlsx', engine= 'xlsxwriter')
-            df2[['parId', 'id', 'name', 'weight', 'price']].to_excel(writer, index=False, sheet_name='Productos en tienda')
-
-            workbook = writer.book
-            worksheet = writer.sheets['Productos en tienda']
-
-            worksheet.set_column('B:C', 18)
-            writer.save()
             sg.popup_no_wait('Se han guardado los resultados', non_blocking = True)
 
         else:
@@ -113,7 +71,8 @@ def woo_prods():
                 "categories": pcats
                 }
 
-                wcapi.post("products", data).json()
+                acciones.crear(data)
+                
                 sg.popup_no_wait('Producto creado con exito', non_blocking = True)
 
             else:
@@ -142,7 +101,8 @@ def woo_prods():
                 "attributes": patri
                 }
 
-                wcapi.post("products", data).json()
+                acciones.crear(data)
+
                 sg.popup_no_wait('Producto creado con exito', non_blocking = True)
 
     except:

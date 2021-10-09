@@ -1,5 +1,4 @@
 import PySimpleGUI as sg
-import xlsxwriter
 import acciones
 import propiedades
 
